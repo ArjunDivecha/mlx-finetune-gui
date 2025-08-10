@@ -38,7 +38,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const electron_1 = require("electron");
 const path = __importStar(require("path"));
-const fs = __importStar(require("fs"));
 const child_process_1 = require("child_process");
 const axios_1 = __importDefault(require("axios"));
 // Keep a global reference of the window object
@@ -46,39 +45,72 @@ let mainWindow = null;
 let backendProcess = null;
 const BACKEND_PORT = 8000;
 const createWindow = () => {
+    console.log('🪟 Creating main window...');
     // Create the browser window
     mainWindow = new electron_1.BrowserWindow({
         width: 1400,
         height: 900,
         minWidth: 1024,
         minHeight: 768,
+        x: 100, // Position window at visible location
+        y: 100,
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
             preload: path.join(__dirname, 'preload.js')
         },
         titleBarStyle: 'hiddenInset',
-        show: false
+        show: true, // Show immediately
+        alwaysOnTop: true, // Force on top initially
+        title: 'MLX Fine-tuning GUI', // Set clear title
+        skipTaskbar: false,
+        resizable: true,
+        center: true
     });
+    console.log('✅ BrowserWindow created');
+    console.log('📍 Window position:', mainWindow.getPosition());
+    console.log('📏 Window size:', mainWindow.getSize());
+    console.log('👀 Window visible:', mainWindow.isVisible());
     // Load the frontend
     const isDev = process.env.NODE_ENV === 'development';
-    if (isDev) {
-        // In development, load from the built frontend dist folder
-        const frontendPath = `file://${path.join(__dirname, '../frontend/dist/index.html')}`;
-        console.log('Loading frontend from:', frontendPath);
-        mainWindow.loadURL(frontendPath);
+    // Always load from the built frontend dist folder
+    const frontendPath = `file://${path.join(__dirname, '../frontend/dist/index.html')}`;
+    console.log('🔗 Loading frontend from:', frontendPath);
+    // Check if the file exists
+    if (require('fs').existsSync(path.join(__dirname, '../frontend/dist/index.html'))) {
+        console.log('✅ Frontend index.html exists');
     }
     else {
-        // In production, load from the packaged resources
-        const frontendPath = `file://${path.join(__dirname, '../frontend/dist/index.html')}`;
-        mainWindow.loadURL(frontendPath);
+        console.error('❌ Frontend index.html NOT FOUND!');
     }
-    // Show window when ready
+    mainWindow.loadURL(frontendPath);
+    console.log('📄 Frontend loading started');
+    // Aggressively show the window when ready
     mainWindow.once('ready-to-show', () => {
+        console.log('Window ready-to-show event fired');
         if (mainWindow) {
             mainWindow.show();
+            mainWindow.focus();
+            mainWindow.moveTop();
+            console.log('Window shown and focused');
         }
     });
+    // Remove alwaysOnTop after 3 seconds to allow normal window behavior  
+    setTimeout(() => {
+        if (mainWindow) {
+            mainWindow.setAlwaysOnTop(false);
+            mainWindow.focus();
+            mainWindow.moveTop();
+        }
+    }, 3000);
+    // Force show window after 5 seconds if ready-to-show doesn't fire
+    setTimeout(() => {
+        if (mainWindow && !mainWindow.isVisible()) {
+            console.log('Force showing window after timeout');
+            mainWindow.show();
+            mainWindow.focus();
+        }
+    }, 5000);
     // Open DevTools in development
     if (isDev) {
         mainWindow.webContents.openDevTools();
@@ -91,12 +123,7 @@ const createWindow = () => {
 const startBackendServer = async () => {
     return new Promise((resolve, reject) => {
         const backendPath = path.join(__dirname, '../backend');
-        const pythonPath = '/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python';
-        // Check if python path exists
-        if (!fs.existsSync(pythonPath)) {
-            reject(new Error(`Python venv not found at: ${pythonPath}`));
-            return;
-        }
+        const pythonPath = 'python3';
         backendProcess = (0, child_process_1.spawn)(pythonPath, ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', BACKEND_PORT.toString()], {
             cwd: backendPath,
             stdio: ['pipe', 'pipe', 'pipe']
@@ -113,15 +140,22 @@ const startBackendServer = async () => {
         });
         // Wait for server to be ready
         const checkServer = async (attempts = 0) => {
-            if (attempts > 30) {
-                reject(new Error('Backend server failed to start within 30 seconds'));
+            if (attempts > 60) {
+                reject(new Error('Backend server failed to start within 60 seconds'));
                 return;
             }
             try {
-                await axios_1.default.get(`http://localhost:${BACKEND_PORT}/health`);
-                resolve();
+                // Use IPv4 explicitly to match backend binding
+                const response = await axios_1.default.get(`http://127.0.0.1:${BACKEND_PORT}/training/status`, { timeout: 5000 });
+                if (response.status === 200) {
+                    console.log(`Backend health check passed after ${attempts + 1} attempts`);
+                    resolve();
+                    return;
+                }
+                throw new Error(`Unexpected status: ${response.status}`);
             }
             catch (error) {
+                console.log(`Backend health check attempt ${attempts + 1} failed:`, error.message);
                 setTimeout(() => checkServer(attempts + 1), 1000);
             }
         };
