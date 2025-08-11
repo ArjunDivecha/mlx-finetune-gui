@@ -27,8 +27,8 @@ ChartJS.register(
 
 interface DataPoint {
   step: number;
-  trainLoss: number;
-  valLoss?: number;
+  trainLoss: number | null;
+  valLoss: number | null;
   learningRate: number;
 }
 
@@ -37,23 +37,25 @@ export const TrainingChart: React.FC = () => {
   const dataPointsRef = useRef<DataPoint[]>([]);
 
   useEffect(() => {
-    if (metrics && trainingState === 'running') {
-      // Add new data point
-      const newPoint: DataPoint = {
-        step: metrics.current_step,
-        trainLoss: metrics.train_loss,
-        valLoss: metrics.val_loss,
-        learningRate: metrics.learning_rate
-      };
+    if (metrics && (trainingState === 'running' || trainingState === 'completed')) {
+      // Only add data points when we have actual loss values (not null)
+      if (metrics.train_loss != null || metrics.val_loss != null) {
+        const newPoint: DataPoint = {
+          step: metrics.current_step,
+          trainLoss: metrics.train_loss,
+          valLoss: metrics.val_loss,
+          learningRate: metrics.learning_rate
+        };
 
-      // Avoid duplicate points
-      const lastPoint = dataPointsRef.current[dataPointsRef.current.length - 1];
-      if (!lastPoint || lastPoint.step !== newPoint.step) {
-        dataPointsRef.current.push(newPoint);
-        
-        // Keep only last 1000 points for performance
-        if (dataPointsRef.current.length > 1000) {
-          dataPointsRef.current = dataPointsRef.current.slice(-1000);
+        // Avoid duplicate points
+        const lastPoint = dataPointsRef.current[dataPointsRef.current.length - 1];
+        if (!lastPoint || lastPoint.step !== newPoint.step) {
+          dataPointsRef.current.push(newPoint);
+          
+          // Keep only last 1000 points for performance
+          if (dataPointsRef.current.length > 1000) {
+            dataPointsRef.current = dataPointsRef.current.slice(-1000);
+          }
         }
       }
     }
@@ -69,7 +71,8 @@ export const TrainingChart: React.FC = () => {
   const data = {
     labels: dataPointsRef.current.map(point => point.step.toString()),
     datasets: [
-      {
+      // Only include training loss dataset if we have non-null training loss data
+      ...(dataPointsRef.current.some(point => point.trainLoss != null) ? [{
         label: 'Training Loss',
         data: dataPointsRef.current.map(point => point.trainLoss),
         borderColor: 'rgb(59, 130, 246)', // blue-500
@@ -79,8 +82,10 @@ export const TrainingChart: React.FC = () => {
         pointRadius: 0,
         pointHoverRadius: 4,
         borderWidth: 2,
-      },
-      ...(dataPointsRef.current.some(point => point.valLoss !== undefined) ? [{
+        spanGaps: false,  // Don't connect null values
+      }] : []),
+      // Only include validation loss dataset if we have non-null validation loss data
+      ...(dataPointsRef.current.some(point => point.valLoss != null) ? [{
         label: 'Validation Loss',
         data: dataPointsRef.current.map(point => point.valLoss),
         borderColor: 'rgb(16, 185, 129)', // green-500
@@ -90,6 +95,7 @@ export const TrainingChart: React.FC = () => {
         pointRadius: 0,
         pointHoverRadius: 4,
         borderWidth: 2,
+        spanGaps: false,  // Don't connect null values
       }] : []),
     ],
   };

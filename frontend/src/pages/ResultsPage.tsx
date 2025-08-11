@@ -114,7 +114,7 @@ export const ResultsPage: React.FC = () => {
 
             <div className="text-center p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
               <div className="text-2xl font-bold text-error-600">
-                {metrics.train_loss.toFixed(4)}
+                {metrics.train_loss != null ? metrics.train_loss.toFixed(4) : '--'}
               </div>
               <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 Final Train Loss

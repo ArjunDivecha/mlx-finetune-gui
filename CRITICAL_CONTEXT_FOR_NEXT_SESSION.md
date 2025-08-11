@@ -1,5 +1,30 @@
 # CRITICAL CONTEXT FOR NEXT SESSION
 
+## 🚨 CRITICAL RESTART PROCEDURE - READ FIRST! 🚨
+
+**WHEN RESTARTING PROCESSES: ALWAYS KILL BOTH FRONTEND AND BACKEND TOGETHER**
+
+The Electron app and backend have tight coupling - if you kill the frontend but leave the backend running, then restart the frontend, it CANNOT see the existing backend process and fails to connect properly.
+
+### ⚠️ WRONG WAY (CAUSES FAILURES):
+```bash
+# Kill only frontend → Backend keeps running → Start frontend = CONNECTION FAILURE
+kill <electron_processes>  # Backend still running
+npm start  # Frontend cannot connect to existing backend
+```
+
+### ✅ CORRECT WAY (ALWAYS WORKS):
+```bash
+# Kill BOTH processes together
+ps aux | grep -E "(electron|uvicorn|python.*main)" | grep -v grep
+kill -9 <all_process_ids>
+
+# Then start everything fresh
+npm start  # Starts both backend and frontend together
+```
+
+**REASON**: The Electron app expects to spawn its own backend process and manage the connection lifecycle. Orphaned backend processes cause port conflicts and connection failures.
+
 ## 🚨 CURRENT STATUS: PARTIALLY COMPLETE WITH CRITICAL ISSUES
 
 **DO NOT CLAIM COMPLETION** - The application has serious build failures that prevent actual usage.

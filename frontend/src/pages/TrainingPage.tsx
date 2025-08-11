@@ -203,9 +203,9 @@ export const TrainingPage: React.FC = () => {
               <TrendingDown className="h-5 w-5 text-primary-600" />
             </div>
             <p className="text-lg font-semibold">
-              {metrics?.train_loss.toFixed(4) || '--'}
+              {metrics?.train_loss != null ? metrics.train_loss.toFixed(4) : '--'}
             </p>
-            {metrics?.val_loss && (
+            {metrics?.val_loss != null && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Val: {metrics.val_loss.toFixed(4)}
               </p>

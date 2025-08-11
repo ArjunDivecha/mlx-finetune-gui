@@ -3,8 +3,8 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export interface TrainingMetrics {
   current_step: number;
   total_steps: number;
-  train_loss: number;
-  val_loss: number;
+  train_loss: number | null;  // Can be null before first measurement
+  val_loss: number | null;    // Can be null before first measurement
   learning_rate: number;
   start_time: string;
   estimated_time_remaining: number | null;

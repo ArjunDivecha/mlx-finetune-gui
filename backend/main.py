@@ -244,8 +244,8 @@ class TrainingManager:
         self.training_metrics = {
             "current_step": 0,
             "total_steps": config.iterations,
-            "train_loss": 0.0,
-            "val_loss": 0.0,
+            "train_loss": None,  # Don't initialize with 0, wait for first real value
+            "val_loss": None,    # Don't initialize with 0, wait for first real value
             "learning_rate": config.learning_rate,
             "start_time": datetime.now().isoformat(),
             "estimated_time_remaining": None
@@ -371,8 +371,8 @@ class TrainingManager:
                         # Parse metrics from output
                         step_match = step_pattern.search(output)
                         if step_match:
-                            # Convert 0-based iteration to 1-based step count
-                            self.training_metrics["current_step"] = int(step_match.group(1)) + 1
+                            # Use iteration number directly as step (Iter 0 = Step 0, Iter 1 = Step 1, etc.)
+                            self.training_metrics["current_step"] = int(step_match.group(1))
                         
                         loss_match = loss_pattern.search(output)
                         if loss_match:
@@ -424,8 +424,8 @@ class TrainingManager:
                     # Parse final metrics from remaining output
                     step_match = step_pattern.search(remaining_output)
                     if step_match:
-                        # Convert 0-based iteration to 1-based step count
-                        self.training_metrics["current_step"] = int(step_match.group(1)) + 1
+                        # Use iteration number directly as step (Iter 0 = Step 0, Iter 1 = Step 1, etc.)
+                        self.training_metrics["current_step"] = int(step_match.group(1))
                     
                     loss_match = loss_pattern.search(remaining_output)
                     if loss_match:

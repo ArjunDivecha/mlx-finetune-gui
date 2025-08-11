@@ -91,7 +91,7 @@ export const StatusBar: React.FC = () => {
           <span>MLX Ready</span>
         </div>
 
-        {metrics && (
+        {metrics && metrics.train_loss != null && (
           <div className="flex items-center space-x-1">
             <span>Loss: {metrics.train_loss.toFixed(4)}</span>
           </div>
