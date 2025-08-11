@@ -47,12 +47,12 @@ export const ComparePage: React.FC = () => {
       const [baseResponse, fineTunedResponse] = await Promise.all([
         axios.post('http://localhost:8000/model/test-base', {
           prompt: inputPrompt,
-          max_tokens: 200,
+          max_tokens: 1024,
           temperature: 0.7
         }),
         axios.post('http://localhost:8000/model/test', {
           prompt: inputPrompt,
-          max_tokens: 200,
+          max_tokens: 1024,
           temperature: 0.7
         })
       ]);

@@ -613,7 +613,7 @@ async def test_base_model(request_data: dict):
     """Test the base model (without adapter) with a prompt"""
     try:
         prompt = request_data.get("prompt", "")
-        max_tokens = request_data.get("max_tokens", 100)
+        max_tokens = request_data.get("max_tokens", 1024)
         temperature = request_data.get("temperature", 0.7)
         
         if not prompt:
@@ -710,7 +710,7 @@ async def test_model(request_data: dict):
     """Test the fine-tuned model with a prompt"""
     try:
         prompt = request_data.get("prompt", "")
-        max_tokens = request_data.get("max_tokens", 100)
+        max_tokens = request_data.get("max_tokens", 1024)
         temperature = request_data.get("temperature", 0.7)
         
         if not prompt:
