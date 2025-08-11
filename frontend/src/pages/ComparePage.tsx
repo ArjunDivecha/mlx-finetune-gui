@@ -30,6 +30,8 @@ export const ComparePage: React.FC = () => {
   const [selectedComparison, setSelectedComparison] = useState<string | null>(null);
   const [isLoadSessionOpen, setIsLoadSessionOpen] = useState(false);
   const [loadedSession, setLoadedSession] = useState<any>(null);
+  const [maxTokens, setMaxTokens] = useState<number>(1024);
+  const [temperature, setTemperature] = useState<number>(0.7);
 
   // Real model inference function
   const generateResponses = async (inputPrompt: string) => {
@@ -47,13 +49,13 @@ export const ComparePage: React.FC = () => {
       const [baseResponse, fineTunedResponse] = await Promise.all([
         axios.post('http://localhost:8000/model/test-base', {
           prompt: inputPrompt,
-          max_tokens: 200,
-          temperature: 0.7
+          max_tokens: maxTokens,
+          temperature: temperature
         }),
         axios.post('http://localhost:8000/model/test', {
           prompt: inputPrompt,
-          max_tokens: 200,
-          temperature: 0.7
+          max_tokens: maxTokens,
+          temperature: temperature
         })
       ]);
 
@@ -217,6 +219,59 @@ export const ComparePage: React.FC = () => {
       <div className="card">
         <div className="card-body">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Generation Settings */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Max Tokens</label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="range"
+                    min={64}
+                    max={4096}
+                    step={64}
+                    value={maxTokens}
+                    onChange={(e) => setMaxTokens(Number(e.target.value))}
+                    className="w-full"
+                    disabled={isGenerating}
+                  />
+                  <input
+                    type="number"
+                    className="input-field w-24"
+                    min={1}
+                    max={65536}
+                    step={1}
+                    value={maxTokens}
+                    onChange={(e) => setMaxTokens(Math.max(1, Number(e.target.value)))}
+                    disabled={isGenerating}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Temperature</label>
+                <div className="flex items-center space-x-3">
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={temperature}
+                    onChange={(e) => setTemperature(Number(e.target.value))}
+                    className="w-full"
+                    disabled={isGenerating}
+                  />
+                  <input
+                    type="number"
+                    className="input-field w-24"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={temperature}
+                    onChange={(e) => setTemperature(Number(e.target.value))}
+                    disabled={isGenerating}
+                  />
+                </div>
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium mb-2">
                 Enter your prompt to compare model responses
