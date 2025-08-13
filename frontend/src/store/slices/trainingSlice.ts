@@ -73,6 +73,8 @@ export const trainingSlice = createSlice({
     },
     clearLogs: (state) => {
       state.logs = [];
+      // Force array to be completely new to trigger React re-render
+      state.logs = [...state.logs];
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
@@ -89,13 +91,28 @@ export const trainingSlice = createSlice({
     trainingStarted: (state) => {
       state.state = 'running';
       state.error = null;
+      state.metrics = null; // Clear old metrics
+      state.logs = []; // Clear logs
     },
     trainingProgress: (state, action: PayloadAction<{ metrics: TrainingMetrics; log_line: string }>) => {
-      state.metrics = action.payload.metrics;
-      state.logs.push(action.payload.log_line);
-      // Keep only last 1000 lines
-      if (state.logs.length > 1000) {
-        state.logs = state.logs.slice(-1000);
+      // Handle both direct payload and nested data structures
+      const data = action.payload;
+      if (data && data.metrics) {
+        // If step regressed, assume a fresh run and clear logs
+        if (state.metrics && typeof data.metrics.current_step === 'number' && data.metrics.current_step < state.metrics.current_step) {
+          state.logs = [];
+        }
+        state.metrics = data.metrics;
+        // Ensure state reflects running when progress arrives
+        state.state = 'running';
+      }
+      // Only add non-empty log lines to avoid spam
+      if (data && data.log_line && data.log_line.trim().length > 0) {
+        state.logs.push(data.log_line);
+        // Keep only last 1000 lines
+        if (state.logs.length > 1000) {
+          state.logs = state.logs.slice(-1000);
+        }
       }
     },
     trainingCompleted: (state, action: PayloadAction<{ final_metrics: TrainingMetrics }>) => {

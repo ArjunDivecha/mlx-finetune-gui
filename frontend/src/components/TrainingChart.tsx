@@ -59,6 +59,18 @@ export const TrainingChart: React.FC = () => {
         }
       }
     }
+    
+    // For completed training sessions with no chart data, create a synthetic final point
+    if (trainingState === 'completed' && metrics && dataPointsRef.current.length === 0 && 
+        (metrics.train_loss != null || metrics.val_loss != null)) {
+      const finalPoint: DataPoint = {
+        step: metrics.current_step,
+        trainLoss: metrics.train_loss,
+        valLoss: metrics.val_loss,
+        learningRate: metrics.learning_rate
+      };
+      dataPointsRef.current = [finalPoint];
+    }
   }, [metrics, trainingState]);
 
   // Reset data when training starts fresh
