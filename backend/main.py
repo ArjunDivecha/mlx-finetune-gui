@@ -258,11 +258,8 @@ class TrainingManager:
         config_data = {
             "venv_python": "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python",
             "base_model_dir": config.model_path,
-            "chat_train_jsonl": config.train_data_path,
-            "chat_valid_jsonl": config.val_data_path,
-            "prepare_from_chat": True,
-            "apply_chat_template_model_dir": config.model_path,
-            "out_data_dir": "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune/data",
+            "prepared_data_dir": "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune/data",
+            "prepare_from_chat": False,  # Disable chat preparation since script is missing
             "adapter_output_dir": self.output_dir,
             "adapter_name": config.adapter_name,
             "optimizer": "adamw",
@@ -291,8 +288,7 @@ class TrainingManager:
         # Start training process
         try:
             cmd = [
-                "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python",
-                "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune/run_finetune.py",
+                "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/one_step_finetune/run_finetune.py",
                 "--config", config_path
             ]
             
@@ -349,6 +345,14 @@ class TrainingManager:
                 
             except Exception as e:
                 logger.error(f"Error stopping training: {e}")
+        else:
+            # If no process is running but state is error, reset to idle
+            if self.training_state == "error":
+                self.training_state = "idle"
+                await self.broadcast({
+                    "type": "training_reset",
+                    "data": {"message": "Training state reset from error to idle"}
+                })
         
     async def _monitor_training(self):
         """Monitor the training process and broadcast updates"""
@@ -415,11 +419,16 @@ class TrainingManager:
             return_code = self.current_process.wait()
             
             # Read any remaining output after process completion
+            early_stop_detected = False
             try:
                 while True:
                     remaining_output = self.current_process.stdout.readline()
                     if not remaining_output:
                         break
+                    
+                    # Check for early stopping message
+                    if "Early stop:" in remaining_output:
+                        early_stop_detected = True
                     
                     # Parse final metrics from remaining output
                     step_match = step_pattern.search(remaining_output)
@@ -444,6 +453,19 @@ class TrainingManager:
                 await self.broadcast({
                     "type": "training_completed",
                     "data": {"final_metrics": self.training_metrics}
+                })
+            elif early_stop_detected:
+                # Early stopping is a successful completion, not an error
+                self.training_state = "completed"
+                # Save completed session
+                self.save_session()
+                await self.broadcast({
+                    "type": "training_completed",
+                    "data": {
+                        "final_metrics": self.training_metrics,
+                        "early_stopped": True,
+                        "message": "Training completed via early stopping"
+                    }
                 })
             else:
                 self.training_state = "error"

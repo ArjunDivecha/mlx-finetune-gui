@@ -185,13 +185,15 @@ export const LoadSessionModal: React.FC<LoadSessionModalProps> = ({
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">Progress:</span>
                           <p className="font-medium">
-                            {session.steps_completed}/{session.total_steps} 
-                            ({((session.steps_completed / session.total_steps) * 100).toFixed(1)}%)
+                            {session.steps_completed || 0}/{session.total_steps || 0} 
+                            ({session.total_steps ? ((session.steps_completed / session.total_steps) * 100).toFixed(1) : '0.0'}%)
                           </p>
                         </div>
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">Train Loss:</span>
-                          <p className="font-medium">{session.final_train_loss.toFixed(4)}</p>
+                          <p className="font-medium">
+                            {session.final_train_loss ? session.final_train_loss.toFixed(4) : '--'}
+                          </p>
                         </div>
                         <div>
                           <span className="text-gray-500 dark:text-gray-400">Val Loss:</span>
