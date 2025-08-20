@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, CheckCircle, AlertTriangle, Clock, Loader2 } from 'lucide-react';
+import { X, Calendar, CheckCircle, AlertTriangle, Clock, Loader2, Trash2 } from 'lucide-react';
 import axios from 'axios';
 
 interface Session {
@@ -30,6 +30,7 @@ export const LoadSessionModal: React.FC<LoadSessionModalProps> = ({
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingSessionId, setLoadingSessionId] = useState<string | null>(null);
+  const [deletingSessionId, setDeletingSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -72,6 +73,27 @@ export const LoadSessionModal: React.FC<LoadSessionModalProps> = ({
       setError(err.response?.data?.detail || 'Failed to load training session');
     } finally {
       setLoadingSessionId(null);
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: string) => {
+    if (!confirm('Are you sure you want to delete this training session? This action cannot be undone.')) {
+      return;
+    }
+
+    setDeletingSessionId(sessionId);
+    setError(null);
+
+    try {
+      await axios.delete(`${BACKEND_URL}/sessions/${sessionId}`);
+      
+      // Remove the session from our local list
+      setSessions(sessions.filter(s => s.session_id !== sessionId));
+    } catch (err: any) {
+      console.error('Failed to delete session:', err);
+      setError(err.response?.data?.detail || 'Failed to delete training session');
+    } finally {
+      setDeletingSessionId(null);
     }
   };
 
@@ -201,7 +223,19 @@ export const LoadSessionModal: React.FC<LoadSessionModalProps> = ({
                             {session.final_val_loss ? session.final_val_loss.toFixed(4) : '--'}
                           </p>
                         </div>
-                        <div className="flex justify-end">
+                        <div className="flex justify-end space-x-2">
+                          <button
+                            onClick={() => handleDeleteSession(session.session_id)}
+                            disabled={deletingSessionId === session.session_id || loadingSessionId === session.session_id}
+                            className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50 disabled:cursor-not-allowed p-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                            title="Delete session"
+                          >
+                            {deletingSessionId === session.session_id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </button>
                           <button
                             onClick={() => handleLoadSession(session.session_id)}
                             disabled={loadingSessionId === session.session_id || session.training_state !== 'completed'}

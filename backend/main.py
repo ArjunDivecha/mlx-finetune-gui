@@ -52,7 +52,7 @@ class TrainingConfig:
     iterations: int = 7329
     steps_per_report: int = 25
     steps_per_eval: int = 200
-    save_every: int = 1000
+    save_every: int = 25
     early_stop: bool = True
     patience: int = 3
     adapter_name: str = "mlx_finetune"
@@ -71,11 +71,45 @@ class TrainingManager:
         self.sessions_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/sessions"
         self.current_session_id: Optional[str] = None
         
+        # Best model tracking
+        self.best_val_loss: Optional[float] = None
+        self.best_model_step: Optional[int] = None
+        self.best_model_path: Optional[str] = None
+        
         # Ensure sessions directory exists
         os.makedirs(self.sessions_dir, exist_ok=True)
         
         # Load the most recent session on startup
         self.load_latest_session()
+    
+    async def _save_best_model(self, step: int):
+        """Save the current checkpoint as the best model"""
+        try:
+            if not self.current_config:
+                return
+                
+            adapter_dir = os.path.join(self.output_dir, self.current_config.adapter_name)
+            step_file = os.path.join(adapter_dir, f"{step:07d}_adapters.safetensors")
+            best_file = os.path.join(adapter_dir, "best_adapters.safetensors")
+            
+            # Copy the current step checkpoint as the best model
+            if os.path.exists(step_file):
+                import shutil
+                shutil.copy2(step_file, best_file)
+                self.best_model_path = best_file
+                logger.info(f"Saved best model from step {step} with val_loss {self.best_val_loss:.4f}")
+                
+                # Broadcast best model update
+                await self.broadcast({
+                    "type": "best_model_updated",
+                    "data": {
+                        "step": step,
+                        "val_loss": self.best_val_loss,
+                        "path": best_file
+                    }
+                })
+        except Exception as e:
+            logger.error(f"Failed to save best model: {e}")
     
     def save_session(self):
         """Save current training session to persistent storage"""
@@ -93,7 +127,12 @@ class TrainingManager:
                 "training_state": self.training_state,
                 "config": asdict(self.current_config),
                 "metrics": self.training_metrics,
-                "adapter_path": f"{self.output_dir}/{self.current_config.adapter_name}"
+                "adapter_path": os.path.join(self.output_dir, self.current_config.adapter_name, "adapters.safetensors"),
+                "best_model": {
+                    "val_loss": self.best_val_loss,
+                    "step": self.best_model_step,
+                    "path": self.best_model_path
+                } if self.best_val_loss is not None else None
             }
             
             session_file = os.path.join(self.sessions_dir, f"session_{self.current_session_id}.json")
@@ -177,15 +216,14 @@ class TrainingManager:
                         with open(session_file, 'r') as f:
                             session_data = json.load(f)
                         
-                        # Create summary for session list
                         session_summary = {
                             "session_id": session_data["session_id"],
                             "timestamp": session_data["timestamp"],
                             "training_state": session_data["training_state"],
                             "model_name": session_data["config"]["model_path"].split('/')[-1],
                             "adapter_name": session_data["config"]["adapter_name"],
-                            "final_train_loss": session_data["metrics"].get("train_loss", 0),
-                            "final_val_loss": session_data["metrics"].get("val_loss", 0),
+                            "final_train_loss": session_data["metrics"].get("train_loss"),
+                            "final_val_loss": session_data["metrics"].get("val_loss"),
                             "steps_completed": session_data["metrics"].get("current_step", 0),
                             "total_steps": session_data["metrics"].get("total_steps", 0)
                         }
@@ -202,6 +240,44 @@ class TrainingManager:
             logger.error(f"Failed to get sessions list: {e}")
         
         return sessions
+        
+    def delete_session(self, session_id: str) -> bool:
+        """Delete a specific training session"""
+        try:
+            session_file = os.path.join(self.sessions_dir, f"session_{session_id}.json")
+            if not os.path.exists(session_file):
+                logger.warning(f"Session file not found: {session_file}")
+                return False
+            
+            # Remove the session file
+            os.remove(session_file)
+            
+            # Update latest.json if this was the latest session
+            latest_file = os.path.join(self.sessions_dir, "latest.json")
+            if os.path.exists(latest_file):
+                try:
+                    with open(latest_file, 'r') as f:
+                        latest_data = json.load(f)
+                    
+                    if latest_data.get("latest_session_id") == session_id:
+                        # Find the next most recent session
+                        remaining_sessions = self.get_all_sessions()
+                        if remaining_sessions:
+                            # Update to the most recent remaining session
+                            with open(latest_file, 'w') as f:
+                                json.dump({"latest_session_id": remaining_sessions[0]["session_id"]}, f)
+                        else:
+                            # No sessions left, remove latest.json
+                            os.remove(latest_file)
+                except Exception as e:
+                    logger.error(f"Error updating latest.json after deletion: {e}")
+            
+            logger.info(f"Deleted training session: {session_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to delete session {session_id}: {e}")
+            return False
         
     async def add_websocket(self, websocket: WebSocket):
         """Add a WebSocket client"""
@@ -374,21 +450,33 @@ class TrainingManager:
                     if output:
                         # Parse metrics from output
                         step_match = step_pattern.search(output)
-                        if step_match:
-                            # Use iteration number directly as step (Iter 0 = Step 0, Iter 1 = Step 1, etc.)
-                            self.training_metrics["current_step"] = int(step_match.group(1))
-                        
                         loss_match = loss_pattern.search(output)
-                        if loss_match:
-                            self.training_metrics["train_loss"] = float(loss_match.group(1))
-                        
                         val_match = val_pattern.search(output)
-                        if val_match:
-                            self.training_metrics["val_loss"] = float(val_match.group(1))
-                        
                         lr_match = lr_pattern.search(output)
+                        
+                        # Extract metrics
+                        if step_match:
+                            current_step = int(step_match.group(1))
+                            self.training_metrics["current_step"] = current_step
+                            
+                        if loss_match:
+                            train_loss = float(loss_match.group(1))
+                            self.training_metrics["train_loss"] = train_loss
+                            
+                        if val_match:
+                            val_loss = float(val_match.group(1))
+                            self.training_metrics["val_loss"] = val_loss
+                            
+                            # Track best model based on validation loss
+                            if self.best_val_loss is None or val_loss < self.best_val_loss:
+                                self.best_val_loss = val_loss
+                                self.best_model_step = current_step
+                                # Copy current checkpoint as best model
+                                await self._save_best_model(current_step)
+                            
                         if lr_match:
-                            self.training_metrics["learning_rate"] = float(lr_match.group(1))
+                            learning_rate = float(lr_match.group(1))
+                            self.training_metrics["learning_rate"] = learning_rate
                         
                         # Calculate progress and ETA
                         if "current_step" in self.training_metrics and "total_steps" in self.training_metrics:
@@ -551,8 +639,8 @@ async def start_training(config_data: Dict[str, Any], background_tasks: Backgrou
             max_seq_length=config_data.get("max_seq_length", 1024),
             iterations=config_data.get("iterations", 7329),
             steps_per_report=config_data.get("steps_per_report", 25),
-            steps_per_eval=config_data.get("steps_per_eval", 200),
-            save_every=config_data.get("save_every", 1000),
+            steps_per_eval=config_data.get("steps_per_eval", 25),
+            save_every=25,  # Force save every 25 steps regardless of frontend input
             early_stop=config_data.get("early_stop", True),
             patience=config_data.get("patience", 3),
             adapter_name=config_data.get("adapter_name", "mlx_finetune")
@@ -630,6 +718,18 @@ async def load_session(session_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.delete("/sessions/{session_id}")
+async def delete_session(session_id: str):
+    """Delete a specific training session"""
+    try:
+        success = training_manager.delete_session(session_id)
+        if success:
+            return {"status": "success", "message": f"Session {session_id} deleted successfully"}
+        else:
+            raise HTTPException(status_code=404, detail="Session not found")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/model/test-base")
 async def test_base_model(request_data: dict):
     """Test the base model (without adapter) with a prompt"""
@@ -693,7 +793,7 @@ print("RESPONSE_END")
             cmd,
             capture_output=True,
             text=True,
-            timeout=60  # 60 second timeout
+            timeout=300  # 5 minute timeout for large models
         )
         
         if process.returncode != 0:
@@ -746,10 +846,18 @@ async def test_model(request_data: dict):
         model_path = config.model_path
         adapter_name = config.adapter_name
         
-        # Path to the fine-tuned adapter
-        adapter_path = f"/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters/{adapter_name}"
+        # Determine adapter path - use best model if available, otherwise latest
+        adapter_dir = os.path.join("/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters", adapter_name)
+        best_adapter_path = os.path.join(adapter_dir, "best_adapters.safetensors")
+        latest_adapter_path = os.path.join(adapter_dir, "adapters.safetensors")
         
-        # Check if adapter exists
+        # Use best model if available, otherwise fall back to latest
+        if os.path.exists(best_adapter_path):
+            adapter_path = best_adapter_path
+            model_type = "best"
+        else:
+            adapter_path = latest_adapter_path
+            model_type = "latest"
         if not os.path.exists(adapter_path):
             raise HTTPException(status_code=404, detail=f"Fine-tuned adapter not found at {adapter_path}")
         
@@ -799,7 +907,7 @@ print("RESPONSE_END")
             cmd,
             capture_output=True,
             text=True,
-            timeout=60  # 60 second timeout
+            timeout=300  # 5 minute timeout for large models
         )
         
         if process.returncode != 0:
@@ -822,6 +930,7 @@ print("RESPONSE_END")
             "model_info": {
                 "base_model": model_path.split('/')[-1],
                 "adapter": adapter_name,
+                "adapter_type": model_type,
                 "max_tokens": max_tokens,
                 "temperature": temperature
             }
