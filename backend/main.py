@@ -767,11 +767,11 @@ prompt = """{prompt}"""
 response = None
 try:
     # Try with temp parameter
-    response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens}, temp={temperature})
+    response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens})
 except TypeError:
     try:
         # Try with temperature parameter  
-        response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens}, temperature={temperature})
+        response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens})
     except TypeError:
         try:
             # Try with just basic parameters
@@ -846,18 +846,22 @@ async def test_model(request_data: dict):
         model_path = config.model_path
         adapter_name = config.adapter_name
         
-        # Determine adapter path - use best model if available, otherwise latest
+        # Determine adapter path - MLX expects directory path, not file path
         adapter_dir = os.path.join("/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters", adapter_name)
-        best_adapter_path = os.path.join(adapter_dir, "best_adapters.safetensors")
-        latest_adapter_path = os.path.join(adapter_dir, "adapters.safetensors")
+        best_adapter_file = os.path.join(adapter_dir, "best_adapters.safetensors")
+        latest_adapter_file = os.path.join(adapter_dir, "adapters.safetensors")
         
         # Use best model if available, otherwise fall back to latest
-        if os.path.exists(best_adapter_path):
-            adapter_path = best_adapter_path
+        if os.path.exists(best_adapter_file):
+            # Copy best model to adapters.safetensors so MLX can find it
+            import shutil
+            shutil.copy2(best_adapter_file, latest_adapter_file)
             model_type = "best"
         else:
-            adapter_path = latest_adapter_path
             model_type = "latest"
+        
+        # MLX expects the directory path, not the file path
+        adapter_path = adapter_dir
         if not os.path.exists(adapter_path):
             raise HTTPException(status_code=404, detail=f"Fine-tuned adapter not found at {adapter_path}")
         
@@ -881,11 +885,11 @@ prompt = """{prompt}"""
 response = None
 try:
     # Try with temp parameter
-    response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens}, temp={temperature})
+    response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens})
 except TypeError:
     try:
         # Try with temperature parameter  
-        response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens}, temperature={temperature})
+        response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens})
     except TypeError:
         try:
             # Try with just basic parameters
@@ -943,6 +947,173 @@ print("RESPONSE_END")
         raise HTTPException(status_code=500, detail=str(e))
 
 # WebSocket endpoint for real-time updates
+@app.get("/models/available")
+async def get_available_models():
+    """Get all available models and their adapters"""
+    try:
+        base_model_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model"
+        adapter_base_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters"
+        
+        models = []
+        
+        # Scan for available base models
+        if os.path.exists(base_model_dir):
+            for item in os.listdir(base_model_dir):
+                model_path = os.path.join(base_model_dir, item)
+                if os.path.isdir(model_path):
+                    # Check for adapters for this model
+                    adapters = []
+                    if os.path.exists(adapter_base_dir):
+                        for adapter_name in os.listdir(adapter_base_dir):
+                            adapter_dir = os.path.join(adapter_base_dir, adapter_name)
+                            if os.path.isdir(adapter_dir):
+                                # Check if this adapter has weights
+                                adapter_file = os.path.join(adapter_dir, "adapters.safetensors")
+                                best_adapter_file = os.path.join(adapter_dir, "best_adapters.safetensors")
+                                if os.path.exists(adapter_file) or os.path.exists(best_adapter_file):
+                                    adapters.append({
+                                        "name": adapter_name,
+                                        "has_best": os.path.exists(best_adapter_file),
+                                        "has_latest": os.path.exists(adapter_file),
+                                        "path": adapter_dir
+                                    })
+                    
+                    models.append({
+                        "name": item,
+                        "path": model_path,
+                        "adapters": adapters
+                    })
+        
+        return {"models": models}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/models/inference")
+async def model_inference(request_data: dict):
+    """Model-agnostic inference endpoint"""
+    try:
+        prompt = request_data.get("prompt", "").strip()
+        model_name = request_data.get("model_name")
+        adapter_name = request_data.get("adapter_name")  # Optional
+        max_tokens = request_data.get("max_tokens", 100)
+        temperature = request_data.get("temperature", 0.7)
+        
+        if not prompt:
+            raise HTTPException(status_code=400, detail="Prompt is required")
+        if not model_name:
+            raise HTTPException(status_code=400, detail="Model name is required")
+        
+        # Build model path
+        base_model_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model"
+        model_path = os.path.join(base_model_dir, model_name)
+        
+        if not os.path.exists(model_path):
+            raise HTTPException(status_code=404, detail=f"Model not found: {model_name}")
+        
+        # Build adapter path if specified
+        adapter_path = None
+        adapter_type = "none"
+        if adapter_name:
+            adapter_base_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters"
+            adapter_dir = os.path.join(adapter_base_dir, adapter_name)
+            
+            if os.path.exists(adapter_dir):
+                best_adapter_file = os.path.join(adapter_dir, "best_adapters.safetensors")
+                latest_adapter_file = os.path.join(adapter_dir, "adapters.safetensors")
+                
+                # Use best model if available, otherwise latest
+                if os.path.exists(best_adapter_file):
+                    import shutil
+                    shutil.copy2(best_adapter_file, latest_adapter_file)
+                    adapter_type = "best"
+                elif os.path.exists(latest_adapter_file):
+                    adapter_type = "latest"
+                
+                if os.path.exists(latest_adapter_file):
+                    adapter_path = adapter_dir
+        
+        # Use MLX to generate text
+        python_path = '/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python'
+        
+        if adapter_path:
+            # Fine-tuned model inference
+            cmd = [
+                python_path, '-c', f'''
+import mlx.core as mx
+from mlx_lm import load, generate
+
+try:
+    model, tokenizer = load("{model_path}", adapter_path="{adapter_path}")
+    prompt = """{prompt}"""
+    
+    response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens})
+    print("RESPONSE_START")
+    print(response)
+    print("RESPONSE_END")
+except Exception as e:
+    print(f"Error: {{e}}")
+    import traceback
+    traceback.print_exc()
+'''
+            ]
+        else:
+            # Base model inference
+            cmd = [
+                python_path, '-c', f'''
+import mlx.core as mx
+from mlx_lm import load, generate
+
+try:
+    model, tokenizer = load("{model_path}")
+    prompt = """{prompt}"""
+    
+    response = generate(model, tokenizer, prompt=prompt, max_tokens={max_tokens})
+    print("RESPONSE_START")
+    print(response)
+    print("RESPONSE_END")
+except Exception as e:
+    print(f"Error: {{e}}")
+    import traceback
+    traceback.print_exc()
+'''
+            ]
+        
+        process = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout for large models
+        )
+        
+        if process.returncode != 0:
+            raise HTTPException(status_code=500, detail=f"Model inference failed: {process.stderr}")
+        
+        # Extract the response between markers
+        output = process.stdout
+        if "RESPONSE_START" in output and "RESPONSE_END" in output:
+            start_idx = output.find("RESPONSE_START") + len("RESPONSE_START")
+            end_idx = output.find("RESPONSE_END")
+            response_text = output[start_idx:end_idx].strip()
+        else:
+            response_text = output.strip()
+        
+        return {
+            "success": True,
+            "prompt": prompt,
+            "response": response_text,
+            "model_info": {
+                "base_model": model_name,
+                "adapter": adapter_name if adapter_name else "none (base model)",
+                "adapter_type": adapter_type,
+                "max_tokens": max_tokens,
+                "temperature": temperature
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Model inference error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     """WebSocket endpoint for real-time training updates"""
