@@ -15,7 +15,7 @@ class ElectronDebugger:
     def __init__(self):
         self.electron_process = None
         self.backend_url = "http://localhost:8000"
-        self.app_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
+        self.app_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
         
     async def start_electron_app(self):
         """Start the Electron app"""
@@ -94,7 +94,7 @@ class ElectronDebugger:
                             print(f"    Title: {title}")
                             
                             # Take screenshot if possible
-                            screenshot_path = f"/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui/debug_screenshot_{i}_{j}.png"
+                            screenshot_path = f"/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui/debug_screenshot_{i}_{j}.png"
                             await page.screenshot(path=screenshot_path)
                             print(f"    Screenshot saved: {screenshot_path}")
                             

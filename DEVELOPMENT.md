@@ -99,7 +99,7 @@ cd frontend && npm install
 2. **Install Backend Dependencies:**
 ```bash
 cd backend
-/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun\ LLM\ Writing/local_qwen/.venv/bin/pip install -r requirements.txt
+/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun\ LLM\ Writing/local_qwen/.venv/bin/pip install -r requirements.txt
 ```
 
 3. **Start Development Mode:**

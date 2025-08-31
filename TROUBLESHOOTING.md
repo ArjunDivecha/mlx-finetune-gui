@@ -27,7 +27,7 @@ npm run dev
 **Symptoms**: Python errors, FastAPI not found
 **Solution**:
 ```bash
-source "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/activate"
+source "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/activate"
 pip install -r backend/requirements.txt
 ```
 

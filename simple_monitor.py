@@ -13,7 +13,7 @@ from datetime import datetime
 class SimpleMonitor:
     def __init__(self):
         self.backend_url = "http://localhost:8000"
-        self.log_file = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/logs/gui_training.log"
+        self.log_file = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/logs/gui_training.log"
         self.last_log_position = 0
         self.training_updates = []
         self.chart_data_issues = []

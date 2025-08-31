@@ -42,7 +42,7 @@ mlx-finetune-gui/
 - Node.js 18+ and npm
 - Python 3.9+ with venv
 - MLX environment already set up at:
-  `/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv`
+  `/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv`
 
 ### ✅ Installation (NPM Issues Resolved!)
 
@@ -66,7 +66,7 @@ npm install --cache /tmp/npm-cache --no-optional
 
 # 3. Install backend dependencies
 cd ../backend
-source "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/activate"
+source "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/activate"
 pip install -r requirements.txt
 ```
 

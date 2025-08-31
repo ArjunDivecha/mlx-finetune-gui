@@ -1,0 +1,38 @@
+{
+    "adapter_path": "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters/mlx_finetune_new",
+    "batch_size": 1,
+    "config": null,
+    "data": "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune/data",
+    "fine_tune_type": "lora",
+    "grad_checkpoint": true,
+    "iters": 7329,
+    "learning_rate": 1e-05,
+    "lora_parameters": {
+        "rank": 8,
+        "dropout": 0.0,
+        "scale": 20.0
+    },
+    "lr_schedule": null,
+    "mask_prompt": false,
+    "max_seq_length": 1024,
+    "model": "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model/Qwen3-30B-A3B-Instruct-2507-4bit",
+    "num_layers": 16,
+    "optimizer": "adamw",
+    "optimizer_config": {
+        "adam": {},
+        "adamw": {},
+        "muon": {},
+        "sgd": {},
+        "adafactor": {}
+    },
+    "resume_adapter_file": null,
+    "save_every": 25,
+    "seed": 0,
+    "steps_per_eval": 25,
+    "steps_per_report": 25,
+    "test": false,
+    "test_batches": 500,
+    "train": true,
+    "val_batches": -1,
+    "wandb": null
+}

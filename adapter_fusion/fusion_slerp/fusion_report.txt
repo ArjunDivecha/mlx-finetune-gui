@@ -1,0 +1,11 @@
+=== Adapter Fusion Report ===
+
+Fusion Method: slerp
+Number of adapters fused: 2
+
+Source Adapters:
+  1. mlx_finetune_new (weight: 0.0000)
+  2. mlx_finetune_new2 (weight: 0.5000)
+
+Output directory: ./fusion_slerp
+Generated on: 2025-08-31 15:31:34.330626

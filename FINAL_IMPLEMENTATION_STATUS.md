@@ -82,7 +82,7 @@ Training completed successfully:
 
 ### **1. Launch the Application**
 ```bash
-cd "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
+cd "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
 npm run dev
 ```
 

@@ -14,7 +14,7 @@ def check_frontend_build():
     """Check if frontend is properly built"""
     print("🔍 Checking frontend build...")
     
-    app_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
+    app_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
     frontend_dist = f"{app_dir}/frontend/dist"
     
     if not os.path.exists(frontend_dist):
@@ -35,7 +35,7 @@ def check_main_build():
     """Check if main.js is built"""
     print("🔍 Checking main.js build...")
     
-    app_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
+    app_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
     main_js = f"{app_dir}/dist/main.js"
     
     if not os.path.exists(main_js):
@@ -50,7 +50,7 @@ def test_electron_launch():
     """Test launching Electron and check for errors"""
     print("🚀 Testing Electron launch...")
     
-    app_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
+    app_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
     
     try:
         # Start Electron process

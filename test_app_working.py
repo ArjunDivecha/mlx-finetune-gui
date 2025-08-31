@@ -57,7 +57,7 @@ def test_app():
     
     # 4. Try to take a screenshot
     try:
-        screenshot_path = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui/app_screenshot.png"
+        screenshot_path = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui/app_screenshot.png"
         
         subprocess.run([
             "screencapture", "-l$(osascript -e 'tell app \"System Events\" to tell process \"Electron\" to get window 1's id')", 

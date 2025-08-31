@@ -27,7 +27,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Add the parent directory to path to import existing modules
-sys.path.append('/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune')
+sys.path.append('/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune')
 
 app = FastAPI(title="MLX Fine-Tuning GUI API", version="1.0.0")
 
@@ -66,9 +66,9 @@ class TrainingManager:
         self.current_config: Optional[TrainingConfig] = None
         self.training_metrics: Dict[str, Any] = {}
         self.websocket_clients: List[WebSocket] = []
-        self.output_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters"
-        self.log_file = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/logs/gui_training.log"
-        self.sessions_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/sessions"
+        self.output_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters"
+        self.log_file = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/logs/gui_training.log"
+        self.sessions_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/sessions"
         self.current_session_id: Optional[str] = None
         
         # Best model tracking
@@ -332,9 +332,9 @@ class TrainingManager:
         
         # Create config file for the training script
         config_data = {
-            "venv_python": "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python",
+            "venv_python": "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python",
             "base_model_dir": config.model_path,
-            "prepared_data_dir": "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune/data",
+            "prepared_data_dir": "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune/data",
             "prepare_from_chat": False,  # Disable chat preparation since script is missing
             "adapter_output_dir": self.output_dir,
             "adapter_name": config.adapter_name,
@@ -364,7 +364,7 @@ class TrainingManager:
         # Start training process
         try:
             cmd = [
-                "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/one_step_finetune/run_finetune.py",
+                "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/one_step_finetune/run_finetune.py",
                 "--config", config_path
             ]
             
@@ -584,7 +584,7 @@ async def health_check():
 @app.get("/models")
 async def list_models():
     """List available models"""
-    models_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model"
+    models_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model"
     models = []
     
     try:
@@ -749,7 +749,7 @@ async def test_base_model(request_data: dict):
         model_path = config.model_path
         
         # Use MLX to generate text with the base model only (no adapter)
-        python_path = '/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python'
+        python_path = '/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python'
         
         # Create a simple inference command using mlx-lm for base model only
         cmd = [
@@ -847,7 +847,7 @@ async def test_model(request_data: dict):
         adapter_name = config.adapter_name
         
         # Determine adapter path - MLX expects directory path, not file path
-        adapter_dir = os.path.join("/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters", adapter_name)
+        adapter_dir = os.path.join("/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters", adapter_name)
         best_adapter_file = os.path.join(adapter_dir, "best_adapters.safetensors")
         latest_adapter_file = os.path.join(adapter_dir, "adapters.safetensors")
         
@@ -867,7 +867,7 @@ async def test_model(request_data: dict):
         
         # Use MLX to generate text with the fine-tuned model
         # This is a simplified implementation - you might want to use a proper MLX inference script
-        python_path = '/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python'
+        python_path = '/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python'
         
         # Create a simple inference command using mlx-lm
         cmd = [
@@ -951,8 +951,8 @@ print("RESPONSE_END")
 async def get_available_models():
     """Get all available models and their adapters"""
     try:
-        base_model_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model"
-        adapter_base_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters"
+        base_model_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model"
+        adapter_base_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters"
         
         models = []
         
@@ -1004,7 +1004,7 @@ async def model_inference(request_data: dict):
             raise HTTPException(status_code=400, detail="Model name is required")
         
         # Build model path
-        base_model_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model"
+        base_model_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/base_model"
         model_path = os.path.join(base_model_dir, model_name)
         
         if not os.path.exists(model_path):
@@ -1014,7 +1014,7 @@ async def model_inference(request_data: dict):
         adapter_path = None
         adapter_type = "none"
         if adapter_name:
-            adapter_base_dir = "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters"
+            adapter_base_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/artifacts/lora_adapters"
             adapter_dir = os.path.join(adapter_base_dir, adapter_name)
             
             if os.path.exists(adapter_dir):
@@ -1033,7 +1033,7 @@ async def model_inference(request_data: dict):
                     adapter_path = adapter_dir
         
         # Use MLX to generate text
-        python_path = '/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python'
+        python_path = '/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python'
         
         if adapter_path:
             # Fine-tuned model inference

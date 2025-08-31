@@ -26,7 +26,7 @@ fi
 
 # Check if Python dependencies are installed
 echo "🐍 Checking Python backend dependencies..."
-source "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/activate"
+source "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/activate"
 
 # Test if FastAPI is available
 if ! python -c "import fastapi" 2>/dev/null; then

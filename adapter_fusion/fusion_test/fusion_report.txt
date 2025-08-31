@@ -1,0 +1,11 @@
+=== Adapter Fusion Report ===
+
+Fusion Method: weighted
+Number of adapters fused: 2
+
+Source Adapters:
+  1. mlx_finetune_new (weight: 0.5000)
+  2. mlx_finetune_new2 (weight: 0.5000)
+
+Output directory: ./fusion_test
+Generated on: 2025-08-31 15:31:10.834886

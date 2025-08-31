@@ -99,7 +99,7 @@ const createWindow = (): void => {
 const startBackendServer = async (): Promise<void> => {
   return new Promise((resolve, reject) => {
     const backendPath = path.join(__dirname, '../backend');
-    const pythonPath = 'python3';
+    const pythonPath = '/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python';
 
     backendProcess = spawn(pythonPath, ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', BACKEND_PORT.toString()], {
       cwd: backendPath,

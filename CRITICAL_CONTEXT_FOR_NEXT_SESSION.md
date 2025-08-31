@@ -110,7 +110,7 @@ npm run dev
 
 ### Project Root
 ```
-/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui/
+/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui/
 ```
 
 ### Critical Files That Need Fixes
@@ -165,7 +165,7 @@ npm run dev
 
 ```bash
 # Navigate to project
-cd "/Users/macbook2024/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
+cd "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Fine Tuner/mlx-finetune-gui"
 
 # Check current build status
 cd frontend && npm run build
