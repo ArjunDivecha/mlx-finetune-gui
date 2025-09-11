@@ -81,6 +81,11 @@ class TrainingManager:
         
         # Load the most recent session on startup
         self.load_latest_session()
+        
+        # Force idle state if no valid session loaded
+        if not self.current_config:
+            self.training_state = "idle"
+            logger.info("Forcing idle state - no valid session loaded")
     
     async def _save_best_model(self, step: int):
         """Save the current checkpoint as the best model"""
@@ -623,7 +628,7 @@ async def get_training_status():
     return {
         "state": training_manager.training_state,
         "metrics": training_manager.training_metrics,
-        "config": training_manager.current_config.__dict__ if training_manager.current_config else None
+        "config": asdict(training_manager.current_config) if training_manager.current_config else None
     }
 
 @app.post("/training/start")
