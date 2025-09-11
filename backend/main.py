@@ -301,6 +301,49 @@ class TrainingManager:
         if websocket in self.websocket_clients:
             self.websocket_clients.remove(websocket)
     
+    async def _prepare_training_data(self, model_path: str):
+        """Automatically prepare training data using the correct tokenizer for the selected model"""
+        try:
+            import subprocess
+            import os
+            
+            # Define paths
+            chat_train_path = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/arjun_voice_training_combined.jsonl"
+            chat_val_path = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/arjun_voice_validation_combined.jsonl"
+            data_prep_script = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/scripts/prepare_chat_template_dataset.py"
+            output_dir = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/one_step_finetune/data"
+            venv_python = "/Users/macbook2024/Library/CloudStorage/Dropbox/AAA Backup/A Working/Arjun LLM Writing/local_qwen/.venv/bin/python"
+            
+            # Create output directory if it doesn't exist
+            os.makedirs(output_dir, exist_ok=True)
+            
+            # Run data preparation with the selected model's tokenizer
+            cmd = [
+                venv_python,
+                data_prep_script,
+                "--train-path", chat_train_path,
+                "--val-path", chat_val_path,
+                "--model-tokenizer-dir", model_path,
+                "--out-dir", output_dir
+            ]
+            
+            process = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            
+            logger.info(f"Data preparation completed successfully for model: {model_path}")
+            logger.info(f"Data prep output: {process.stdout}")
+            
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Data preparation failed: {e.stderr}")
+            raise HTTPException(status_code=500, detail=f"Failed to prepare training data: {e.stderr}")
+        except Exception as e:
+            logger.error(f"Error in data preparation: {e}")
+            raise HTTPException(status_code=500, detail=f"Error preparing data: {str(e)}")
+    
     async def broadcast(self, message: Dict[str, Any]):
         """Broadcast message to all WebSocket clients"""
         if self.websocket_clients:
@@ -334,6 +377,9 @@ class TrainingManager:
         
         # Generate new session ID for this training run
         self.current_session_id = str(uuid.uuid4())
+        
+        # Automatically prepare training data with the correct tokenizer for the selected model
+        await self._prepare_training_data(config.model_path)
         
         # Create config file for the training script
         config_data = {
@@ -446,7 +492,7 @@ class TrainingManager:
             # Patterns to extract metrics from training output
             step_pattern = re.compile(r'Iter (\d+):')
             loss_pattern = re.compile(r'Train loss ([0-9.]+)')
-            val_pattern = re.compile(r'Val loss\s+([0-9.]+)')
+            val_pattern = re.compile(r'Val loss ([0-9.]+)')
             lr_pattern = re.compile(r'Learning Rate ([0-9.e-]+)')
             
             while self.current_process and self.current_process.poll() is None:
